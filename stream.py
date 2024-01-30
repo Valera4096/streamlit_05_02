@@ -15,34 +15,25 @@ compressed_channels = []
 top_k = int(image.shape[0] - image.shape[0]/100 * age)  
 
 if len(image.shape) == 3:
+    rang = 3
+else:
+    rang = 1
     
-    for i in range(3):  # Проходим по каждому цветовому каналу
-        U, sing_vals, V = np.linalg.svd(image[:,:,i])  
-        # Создаем диагональную матрицу с топ-K сингулярными значениями
-        sigma = np.zeros((image.shape[0], image.shape[1]), dtype=np.float64)
-        np.fill_diagonal(sigma, sing_vals)
-        
-        trunc_U = U[:, :top_k]
-        trunc_sigma = sigma[:top_k, :top_k]
-        trunc_V = V[:top_k, :]
-        # Формула для восстановления сжатого изображения из усеченных матриц U, sigma, V
-        compressed_channel = trunc_U @ trunc_sigma @ trunc_V
-        compressed_channels.append(compressed_channel)
-
-    # Объединяем сжатые цветовые каналы в одно цветное изображение
-    compressed_image = np.stack(compressed_channels, axis=-1).astype('uint8')
-else:      
-    U, sing_vals, V = np.linalg.svd(image)
-    sigma = np.zeros_like(image, dtype=np.float64)
-
+for i in range(rang):  # Проходим по каждому цветовому каналу
+    U, sing_vals, V = np.linalg.svd(image[:,:,i])  if len(image.shape) == 3 else np.linalg.svd(image)
+    # Создаем диагональную матрицу с топ-K сингулярными значениями
+    sigma = np.zeros((image.shape[0], image.shape[1]), dtype=np.float64)
     np.fill_diagonal(sigma, sing_vals)
-
-    top_k = int(image.shape[0] - image.shape[0]/100 * age)
-
+        
     trunc_U = U[:, :top_k]
     trunc_sigma = sigma[:top_k, :top_k]
     trunc_V = V[:top_k, :]
-    compressed_image = trunc_U @ trunc_sigma @ trunc_V
+        # Формула для восстановления сжатого изображения из усеченных матриц U, sigma, V
+    compressed_channel = trunc_U @ trunc_sigma @ trunc_V
+    compressed_channels.append(compressed_channel)
+
+    # Объединяем сжатые цветовые каналы в одно цветное изображение
+    compressed_image = np.stack(compressed_channels, axis=-1).astype('int64')
 
 fig1, ax1 = plt.subplots(figsize=(15, 20))
 ax1.imshow(image, cmap='gray')
@@ -54,6 +45,3 @@ st.pyplot(fig1)
 st.pyplot(fig2)
 
 st.write(f'Фото сжато на {age} %')
-
-
-
